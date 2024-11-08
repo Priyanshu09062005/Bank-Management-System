@@ -1,0 +1,236 @@
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <string>
+#include <iomanip>
+
+class Account {
+public:
+    std::string accountNumber;
+    std::string accountHolderName;
+    std::string accountType;
+    double balance;
+
+    Account(std::string accNum, std::string name, std::string type, double initialBalance) 
+        : accountNumber(accNum), accountHolderName(name), accountType(type), balance(initialBalance) {}
+};
+
+class BankManagementSystem {
+private:
+    std::vector<Account> accounts;
+
+public:
+    // Core Banking Operations
+    void createAccount();
+    void displayAllAccounts();
+    void searchAccount();
+    void depositMoney();
+    void withdrawMoney();
+    void transferFunds();
+
+    // File Handling Operations
+    void saveAccountsToFile();
+    void loadAccountsFromFile();
+
+    // Utility Functions
+    Account* findAccount(const std::string& accountNumber);
+};
+
+void BankManagementSystem::createAccount() {
+    std::string accountNumber, accountHolderName, accountType;
+    double initialBalance;
+
+    std::cout << "\n--- Create New Account ---\n";
+    std::cout << "Enter Account Number: ";
+    std::getline(std::cin, accountNumber);
+
+    // Check if account already exists
+    if (findAccount(accountNumber) != nullptr) {
+        std::cout << "Account already exists!\n";
+        return;
+    }
+
+    std::cout << "Enter Account Holder Name: ";
+    std::getline(std::cin, accountHolderName);
+
+    std::cout << "Select Account Type (Savings/Current): ";
+    std::getline(std::cin, accountType);
+
+    std::cout << "Enter Initial Balance: ";
+    std::cin >> initialBalance;
+    std::cin.ignore();
+
+    accounts.emplace_back(accountNumber, accountHolderName, accountType, initialBalance);
+    std::cout << "Account Created Successfully!\n";
+}
+
+void BankManagementSystem::displayAllAccounts() {
+    if (accounts.empty()) {
+        std::cout << "No accounts found.\n";
+        return;
+    }
+
+    std::cout << "\n--- Account Details ---\n";
+    std::cout << std::left 
+              << std::setw(15) << "Account No" 
+              << std::setw(20) << "Holder Name" 
+              << std::setw(15) << "Account Type" 
+              << "Balance\n";
+    std::cout << std::string(50, '-') << "\n";
+
+    for (const auto& account : accounts) {
+        std::cout << std::left 
+                  << std::setw(15) << account.accountNumber 
+                  << std::setw(20) << account.accountHolderName 
+                  << std::setw(15) << account.accountType 
+                  << "₹" << account.balance << "\n";
+    }
+}
+
+void BankManagementSystem::searchAccount() {
+    std::string accountNumber;
+    std::cout << "Enter Account Number to Search: ";
+    std::getline(std::cin, accountNumber);
+
+    Account* account = findAccount(accountNumber);
+    if (account) {
+        std::cout << "\n--- Account Found ---\n";
+        std::cout << "Account Number: " << account->accountNumber << "\n";
+        std::cout << "Account Holder: " << account->accountHolderName << "\n";
+        std::cout << "Account Type: " << account->accountType << "\n";
+        std::cout << "Current Balance: ₹" << account->balance << "\n";
+    } else {
+        std::cout << "Account Not Found!\n";
+    }
+}
+
+void BankManagementSystem::depositMoney() {
+    std::string accountNumber;
+    double amount;
+
+    std::cout << "Enter Account Number: ";
+    std::getline(std::cin, accountNumber);
+
+    Account* account = findAccount(accountNumber);
+    if (account) {
+        std::cout << "Enter Deposit Amount: ";
+        std::cin >> amount;
+        std::cin.ignore();
+
+        account->balance += amount;
+        std::cout << "Deposit Successful. New Balance: ₹" << account->balance << "\n";
+    } else {
+        std::cout << "Account Not Found!\n";
+    }
+}
+
+void BankManagementSystem::withdrawMoney() {
+    std::string accountNumber;
+    double amount;
+
+    std::cout << "Enter Account Number: ";
+    std::getline(std::cin, accountNumber);
+
+    Account* account = findAccount(accountNumber);
+    if (account) {
+        std::cout << "Enter Withdrawal Amount: ";
+        std::cin >> amount;
+        std::cin.ignore();
+
+        if (amount <= account->balance) {
+            account->balance -= amount;
+            std::cout << "Withdrawal Successful. New Balance: ₹" << account->balance << "\n";
+        } else {
+            std::cout << "Insufficient Funds!\n";
+        }
+    } else {
+        std::cout << "Account Not Found!\n";
+    }
+}
+
+void BankManagementSystem::transferFunds() {
+    std::string fromAccount, toAccount;
+    double amount;
+
+    std::cout << "Enter Source Account Number: ";
+    std::getline(std::cin, fromAccount);
+
+    std::cout << "Enter Destination Account Number: ";
+    std::getline(std::cin, toAccount);
+
+    Account* sourceAccount = findAccount(fromAccount);
+    Account* destinationAccount = findAccount(toAccount);
+
+    if (sourceAccount && destinationAccount) {
+        std::cout << "Enter Transfer Amount: ";
+        std::cin >> amount;
+        std::cin.ignore();
+
+        if (amount <= sourceAccount->balance) {
+            sourceAccount->balance -= amount;
+            destinationAccount->balance += amount;
+            std::cout << "Transfer Successful!\n";
+        } else {
+            std::cout << "Insufficient Funds!\n";
+        }
+    } else {
+        std::cout << "One or both accounts not found!\n";
+    }
+}
+
+Account* BankManagementSystem::findAccount(const std::string& accountNumber) {
+    for (auto& account : accounts) {
+        if (account.accountNumber == accountNumber) {
+            return &account;
+        }
+    }
+    return nullptr;
+}
+
+void BankManagementSystem::saveAccountsToFile() {
+    std::ofstream outFile("bank_accounts.txt");
+    for (const auto& account : accounts) {
+        outFile << account.accountNumber << "\n"
+                << account.accountHolderName << "\n"
+                << account.accountType << "\n"
+                << account.balance << "\n";
+    }
+    outFile.close();
+    std::cout << "Accounts saved successfully!\n";
+}
+
+void BankManagementSystem::loadAccountsFromFile() {
+    std::ifstream inFile("bank_accounts.txt");
+    if (!inFile) {
+        std::cout << "No saved accounts found.\n";
+        return;
+    }
+
+    accounts.clear();
+    std::string accountNumber, accountHolderName, accountType;
+    double balance;
+
+    while (std::getline(inFile, accountNumber)) {
+        std::getline(inFile, accountHolderName);
+        std::getline(inFile, accountType);
+        inFile >> balance;
+        inFile.ignore();
+
+        accounts.emplace_back(accountNumber, accountHolderName, accountType, balance);
+    }
+    inFile.close();
+    std::cout << "Accounts loaded successfully!\n";
+}
+
+int main() {
+    BankManagementSystem bankSystem;
+    bankSystem.loadAccountsFromFile();
+
+    int choice;
+    do {
+        std::cout << "\n--- Bank Management System ---\n";
+        std::cout << "1. Create New Account\n";
+        std::cout << "2. Display All Accounts\n";
+        std::cout << "3. Search Account\n";
+        std::cout << "4. Deposit Money\n";
+        std::cout << "5. Withdraw Money\
